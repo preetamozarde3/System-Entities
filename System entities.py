@@ -118,25 +118,26 @@ import datetime
 # In[110]:
 
 
-results = {'date_result': [], 'time_result': [], 'number_result': [], 'email_result': []}
+results = []
 for i in range(0, len(docs)):
+    res = {}
     for ent in docs[i].ents:
         if ent.label_ == 'DATE':
             if dateparser.parse(str(ent)):
                 date = dateparser.parse(str(ent))
-                results['date_result'].append({'date': str(date)})
+                res.update({'date': str(date)})
             else:
-                results['date_result'].append({'date': str(ent)})
+                res.update({'date': str(ent)})
         if ent.label_ == 'TIME':
             if dateparser.parse(str(ent)):
                 time = dateparser.parse(str(ent))
-                results['time_result'].append({'time': str(time)})
+                res.update({'time': str(time)})
             else:
-                results['time_result'].append({'time': str(ent)})
+                res.update({'time': str(ent)})
     numbers = []
     for match_id, start, end in matcher(docs[i]):
         if nlp.vocab.strings[match_id] == 'Email':
-            results['email_result'].append({'email': docs[i][start:end]})
+            res.update({'email': docs[i][start:end]})
         if nlp.vocab.strings[match_id] == 'Number':
             numbers.append([docs[i][start:end], start, end])
     textnum = []
@@ -145,11 +146,11 @@ for i in range(0, len(docs)):
     for j in range(0, len(numbers)):
         if j == len(numbers) - 1:
             if str(numbers[j][0]).isdigit():
-                results['number_result'].append({'number': numbers[j][0]})
+                res.update({'number': numbers[j][0]})
             else:
                 num = text2int(str(numbers[j][0]))
                 if num != 'Illegal word':
-                    results['number_result'].append({'number': num})
+                    res.update({'number': num})
         else:
             if (numbers[j][2] == numbers[j+1][1]) or (str(docs[i][numbers[j][2]]) == 'and' and numbers[j][2] + 1 == numbers[j+1][1]):
                 if textnum and j != 0:
@@ -167,11 +168,11 @@ for i in range(0, len(docs)):
             else:
                 if numbers[j][1] not in num_added:
                     if str(numbers[j][0]).isdigit():
-                        results['number_result'].append({'number': numbers[j][0]})
+                        res.update({'number': numbers[j][0]})
                     else:
                         num = text2int(str(numbers[j][0]))
                         if num != 'Illegal word':
-                            results['number_result'].append({'number': num})
+                            res.update({'number': num})
     if textnum:
         text_nums.append(textnum)
     for text_num in text_nums:
@@ -180,7 +181,8 @@ for i in range(0, len(docs)):
             text = text + ' ' + str(num)
         num = text2int(text)
         if num != 'Illegal word':
-            results['number_result'].append({'number': num})
+            res.update({'number': num})
+    results.append(res)
 print(results)
 
 
