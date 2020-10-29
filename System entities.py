@@ -148,7 +148,8 @@ for i in range(0, len(docs)):
                 results['number_result'].append({'number': numbers[j][0]})
             else:
                 num = text2int(str(numbers[j][0]))
-                results['number_result'].append({'number': num})
+                if num != 'Illegal word':
+                    results['number_result'].append({'number': num})
         else:
             if (numbers[j][2] == numbers[j+1][1]) or (str(docs[i][numbers[j][2]]) == 'and' and numbers[j][2] + 1 == numbers[j+1][1]):
                 if textnum and j != 0:
@@ -169,7 +170,8 @@ for i in range(0, len(docs)):
                         results['number_result'].append({'number': numbers[j][0]})
                     else:
                         num = text2int(str(numbers[j][0]))
-                        results['number_result'].append({'number': num})
+                        if num != 'Illegal word':
+                            results['number_result'].append({'number': num})
     if textnum:
         text_nums.append(textnum)
     for text_num in text_nums:
@@ -177,7 +179,8 @@ for i in range(0, len(docs)):
         for num in text_num:
             text = text + ' ' + str(num)
         num = text2int(text)
-        results['number_result'].append({'number': num})
+        if num != 'Illegal word':
+            results['number_result'].append({'number': num})
 print(results)
 
 
