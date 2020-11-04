@@ -118,39 +118,61 @@ import datetime
 # In[110]:
 
 
-results = []
+res = []
 for i in range(0, len(docs)):
-    res = {}
+    results = {}
+    dates = []
+    times = []
+    results.update({'date_result': []})
+    results.update({'time_result': []})
+    results.update({'age_result': []})
     for ent in docs[i].ents:
         if ent.label_ == 'DATE':
+            dates.append([ent, ent.start, ent.end])
             if dateparser.parse(str(ent)):
                 date = dateparser.parse(str(ent))
-                res.update({'date': str(date)})
+                results['date_result'].append({'date': str(date)})
             else:
-                res.update({'date': str(ent)})
+                if 'years' or 'age' in ent:
+                    results['age_result'].append({'age': str(ent)})
+                else:
+                    results['date_result'].append({'date': str(ent)})
         if ent.label_ == 'TIME':
+            times.append([ent, ent.start, ent.end])
             if dateparser.parse(str(ent)):
                 time = dateparser.parse(str(ent))
-                res.update({'time': str(time)})
+                results['time_result'].append({'time': str(time)})
             else:
-                res.update({'time': str(ent)})
+                results['time_result'].append({'time': str(time)})
     numbers = []
+    results.update({'email_result': []})
     for match_id, start, end in matcher(docs[i]):
         if nlp.vocab.strings[match_id] == 'Email':
-            res.update({'email': docs[i][start:end]})
+            results['email_result'].append({'email': docs[i][start:end]})
         if nlp.vocab.strings[match_id] == 'Number':
-            numbers.append([docs[i][start:end], start, end])
+            flag = False
+            for entity in dates:
+                if docs[i][start:end].text in entity[0].text:
+                    if start >= entity[1] and end <= entity[2]:
+                        flag = True
+            for entity in times:
+                if docs[i][start:end].text in entity[0].text:
+                    if start >= entity[1] and end <= entity[2]:
+                        flag = True
+            if flag == False:
+                numbers.append([docs[i][start:end], start, end])
     textnum = []
     text_nums = []
     num_added = []
+    results.update({'number_result': []})
     for j in range(0, len(numbers)):
         if j == len(numbers) - 1:
             if str(numbers[j][0]).isdigit():
-                res.update({'number': numbers[j][0]})
+                results['number_result'].append({'number': numbers[j][0]})
             else:
                 num = text2int(str(numbers[j][0]))
                 if num != 'Illegal word':
-                    res.update({'number': num})
+                    results['number_result'].append({'number': num})
         else:
             if (numbers[j][2] == numbers[j+1][1]) or (str(docs[i][numbers[j][2]]) == 'and' and numbers[j][2] + 1 == numbers[j+1][1]):
                 if textnum and j != 0:
@@ -168,11 +190,11 @@ for i in range(0, len(docs)):
             else:
                 if numbers[j][1] not in num_added:
                     if str(numbers[j][0]).isdigit():
-                        res.update({'number': numbers[j][0]})
+                        results['number_result'].append({'number': numbers[j][0]})
                     else:
                         num = text2int(str(numbers[j][0]))
                         if num != 'Illegal word':
-                            res.update({'number': num})
+                            results['number_result'].append({'number': num})
     if textnum:
         text_nums.append(textnum)
     for text_num in text_nums:
@@ -181,9 +203,9 @@ for i in range(0, len(docs)):
             text = text + ' ' + str(num)
         num = text2int(text)
         if num != 'Illegal word':
-            res.update({'number': num})
-    results.append(res)
-print(results)
+            results['number_result'].append({'number': num})
+    res.append(results)
+print(res)
 
 
 # In[ ]:
