@@ -20,6 +20,7 @@ email = [{"TEXT": {"REGEX": "^[^\s@]+@[^\s@]+\.[^\s@]+$"}}]
 
 
 from spacy.matcher import Matcher
+from spacy.tokenizer import Tokenizer
 
 
 # In[30]:
@@ -85,6 +86,56 @@ def text2int(textnum, numwords={}):
 
     return result + current
 
+tokenizer = Tokenizer(nlp.vocab)
+def assign_unit(text):
+    words = tokenizer(text)
+    nums = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve", 
+           "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty", "thirty", "forty", 
+           "fifty", "sixty", "seventy", "eighty", "ninety", "hundred", "thousand", "lakh", "crore", "hundred", "thousand", 
+           "lakh", "crore"]
+    flag = False
+    for word in words:
+        if str(word) in nums:
+            flag = True
+            break
+    if flag == True:
+        result = has_num(words)
+    else:
+        result = has_special_char(words)
+    return result
+    
+def has_special_char(words):
+    unit = ''
+    number = ''
+    if len(words) == 1:
+        for c in str(words[0]): 
+            if not c.isdigit() and not c.isspace():
+                unit = unit + c
+            elif c.isdigit():
+                number = number + c
+    else:
+        for word in words:
+            if str(word).isdigit():
+                number = number + ' ' + str(word)
+            else:
+                unit = unit + ' ' + str(word)
+    return [{'number': number}, {'unit': unit}]
+
+def has_num(words):
+    nums = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve", 
+           "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty", "thirty", "forty", 
+           "fifty", "sixty", "seventy", "eighty", "ninety", "hundred", "thousand", "lakh", "crore", "hundred", "thousand", 
+           "lakh", "crore"]
+    
+    unit = ''
+    number = ''
+    for word in words:
+        if str(word) not in nums:
+            unit = unit + ' ' + str(word)
+        else:
+            number = number + ' ' + str(word)
+    number = text2int(number)
+    return [{'number': number}, {'unit': unit}]
 
 # In[94]:
 
@@ -95,11 +146,15 @@ doc3 = nlp("My email address is preetam@gmail.com")
 doc4 = nlp("Can you send me 5 invitations on test@test.com?")
 doc5 = nlp("I can send you the 10 invitations tomorrow at 3 PM on preetam@gmail.com")
 doc6 = nlp("I need a delivery of five hundred forty thousand six hundred and seventy seven apples by tomorrow evening. Is it possible for you to contact me on preetam@floatbot.com")
-doc7 = nlp("My name is Preetam and I am 23 years old. You can contact me on preetam@gmail.com")
-doc8 = nlp("There is an urgent need of 50 people for the event held at 9 PM on the 18th. Can you confirm that the availability on test@test.com if you are fifteen years of age or over?")
-doc9 = nlp("You can contact me on preetam@gmail.com by tomorrow evening or Sunday at the latest if you are eighteen years or older.")
-doc10 = nlp("Can you deliver thirteen apples and seventeen mangoes on 18th October?")
-docs = [doc1, doc2, doc3, doc4, doc5, doc6, doc7, doc8, doc9, doc10]
+doc7 = nlp("The length of the rectangle is 140 cm.")
+doc8 = nlp("The height of the cube is 113cm.")
+doc9 = nlp("The price of the cube is 500 dollars.")
+doc10 = nlp("The price of 55$ is completely reasonable.")
+doc11 = nlp("Can you send me 65 $ tomorrow?")
+doc12 = nlp("There are sixty five dollars to be paid to him.")
+doc13 = nlp("Th apple costs 67 rupees.")
+doc14 = nlp("The mangoes cost 65rupees.")
+docs = [doc1, doc2, doc3, doc4, doc5, doc6, doc7, doc8, doc9, doc10, doc11, doc12, doc13, doc14]
 
 
 # In[95]:
@@ -123,9 +178,13 @@ for i in range(0, len(docs)):
     results = {}
     dates = []
     times = []
+    quantities = []
+    amounts = []
     results.update({'date_result': []})
     results.update({'time_result': []})
     results.update({'age_result': []})
+    results.update({'quantity_result': []})
+    results.update({'money_result': []})
     for ent in docs[i].ents:
         if ent.label_ == 'DATE':
             dates.append([ent, ent.start, ent.end])
@@ -144,6 +203,14 @@ for i in range(0, len(docs)):
                 results['time_result'].append({'time': str(time)})
             else:
                 results['time_result'].append({'time': str(time)})
+        if ent.label_ == 'QUANTITY':
+            quantities.append([ent, ent.start, ent.end])
+            quantity_result = assign_unit(ent.text)
+            results['quantity_result'].append(quantity_result)
+        if ent.label_ == 'MONEY':
+            amounts.append([ent, ent.start, ent.end])
+            money_result = assign_unit(ent.text)
+            results['money_result'].append(money_result)
     numbers = []
     results.update({'email_result': []})
     for match_id, start, end in matcher(docs[i]):
@@ -156,6 +223,14 @@ for i in range(0, len(docs)):
                     if start >= entity[1] and end <= entity[2]:
                         flag = True
             for entity in times:
+                if docs[i][start:end].text in entity[0].text:
+                    if start >= entity[1] and end <= entity[2]:
+                        flag = True
+            for entity in quantities:
+                if docs[i][start:end].text in entity[0].text:
+                    if start >= entity[1] and end <= entity[2]:
+                        flag = True
+            for entity in amounts:
                 if docs[i][start:end].text in entity[0].text:
                     if start >= entity[1] and end <= entity[2]:
                         flag = True
